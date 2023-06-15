@@ -5,16 +5,16 @@ local StarterGui = game:GetService(`StarterGui`);
 local TweenService = game:GetService(`TweenService`);
 local Library = require(ReplicatedStorage.Library);
 local GUI = Players.LocalPlayer.PlayerGui.Chat;
-local switch, case, default = unpack(require(ReplicatedStorage.Switch));
+local switch, case, default = unpack(require(ReplicatedStorage.Switch)); -- services & chat gui variable
 
 local visible = false;
 local tab = Players.LocalPlayer.PlayerGui.Tab.background;
-local refPosition : UDim2 = tab.Position;
-local hiddenPos = UDim2.fromScale(1 + tab.Size.X.Scale, refPosition.Y.Scale);
+local refPosition : UDim2 = tab.Position; -- get current pos in var
+local hiddenPos = UDim2.fromScale(1 + tab.Size.X.Scale, refPosition.Y.Scale); -- position to close
 tab.Position = hiddenPos;
 tab.Parent.Enabled = true;
 
-UserInputService.InputBegan:Connect(function(input)
+UserInputService.InputBegan:Connect(function(input) -- open / close tab gui
 	if (input.KeyCode ~= Enum.KeyCode.Tab) then
 		return;
 	end
@@ -23,11 +23,11 @@ UserInputService.InputBegan:Connect(function(input)
 	{Position = if (visible) then refPosition else hiddenPos}):Play();
 end);
 
-tab:GetPropertyChangedSignal(`Position`):Connect(function()
-	tab.Visible = tab.Position ~= UDim2.fromScale(0, 0);
+tab:GetPropertyChangedSignal(`Position`):Connect(function() -- visible changer
+	tab.Visible = tab.Position ~= hiddenPos;
 end);
 
-ReplicatedStorage.events.chat.OnClientEvent:Connect(function(plr : Player, text : string)
+ReplicatedStorage.events.chat.OnClientEvent:Connect(function(plr : Player, text : string) -- create message gui
 	local frame = ReplicatedStorage.chatPlayer:Clone();
 	frame.Parent = GUI.window.messages.scroll;
 	frame.avatar.Image = Players:GetUserThumbnailAsync(plr.UserId,
@@ -35,14 +35,14 @@ ReplicatedStorage.events.chat.OnClientEvent:Connect(function(plr : Player, text 
 	frame.message.Text = `{plr.Name}: {text}`;
 end);
 
-UserInputService.InputBegan:Connect(function(input)
+UserInputService.InputBegan:Connect(function(input) -- focus if pressed /
 	if (input.KeyCode ~= Enum.KeyCode.Slash) then
 		return;
 	end
 	GUI.window.chat:CaptureFocus();
 end);
 
-GUI.window.chat.FocusLost:Connect(function(enterPressed)
+GUI.window.chat.FocusLost:Connect(function(enterPressed) -- send by enter
 	if (not enterPressed) then
 		return;
 	end
@@ -50,14 +50,14 @@ GUI.window.chat.FocusLost:Connect(function(enterPressed)
 	GUI.window.chat.Text = ``;
 end);
 
-GUI.window.chat:GetPropertyChangedSignal(`Text`):Connect(function()
+GUI.window.chat:GetPropertyChangedSignal(`Text`):Connect(function() -- message limit 30
 	if (#GUI.window.chat.Text < 30) then
 		return;
 	end
 	GUI.window.chat.Text = string.sub(GUI.window.chat.Text, 1, 30);
 end);
 
-StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false);
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false); -- disable core roblox gui elements
 StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false);
 
 local character = Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait();
@@ -71,24 +71,24 @@ local handBrakeConnectorEnd;
 
 humanoid.CameraOffset = Vector3.new(0, 0, 0);
 Players.LocalPlayer.CameraMaxZoomDistance = 128;
-Players.LocalPlayer.CameraMinZoomDistance = .5;
+Players.LocalPlayer.CameraMinZoomDistance = .5; -- standart camera
 
-ReplicatedStorage.events.shakeCamera.OnClientEvent:Connect(function(_speed, _maxSpeed)
+ReplicatedStorage.events.shakeCamera.OnClientEvent:Connect(function(_speed, _maxSpeed) -- update speed & max speed
 	speed = _speed;
 	maxSpeed = _maxSpeed;
 end);
 
-ReplicatedStorage.events.newOccupant.OnClientEvent:Connect(function(seat, exitKey)
+ReplicatedStorage.events.newOccupant.OnClientEvent:Connect(function(seat, exitKey) -- new occupant event
 	workspace.CurrentCamera.CameraSubject = humanoid;
 
 	coroutine.wrap(function()
 		while (task.wait(.1)) do
-			seat.Parent.sounds[`idle`].PlaybackSpeed = 1 + speed / 100;
+			seat.Parent.sounds[`idle`].PlaybackSpeed = 1 + speed / 100; -- update speed sound by car speed
 		end
 	end) ();
 
 	local exitConnector;
-	exitConnector = UserInputService.InputBegan:Connect(function(input, chatting)
+	exitConnector = UserInputService.InputBegan:Connect(function(input, chatting) -- exit from car
 		if (input.KeyCode ~= exitKey or chatting) then
 			return;
 		end
@@ -102,48 +102,48 @@ ReplicatedStorage.events.newOccupant.OnClientEvent:Connect(function(seat, exitKe
 		end
 		switch (input.KeyCode)
 		{
-			case (Enum.KeyCode.H) (function()
+			case (Enum.KeyCode.H) (function() -- coup car button
 				ReplicatedStorage.events.coupCar:FireServer();
 			end),
 
-			case (Enum.KeyCode.G) (function()
+			case (Enum.KeyCode.G) (function() -- engine on/off button
 				ReplicatedStorage.events.engine:FireServer();
 			end),
 
-			case (Enum.KeyCode.Space) (function()
+			case (Enum.KeyCode.Space) (function() -- handbrake button
 				ReplicatedStorage.events.handbrakeStart:FireServer();
 			end),
 
-			case (Enum.KeyCode.E) (function()
+			case (Enum.KeyCode.E) (function() -- transmission--
 				ReplicatedStorage.events.transmissionChanged:FireServer(true);
 			end),
 
-			case (Enum.KeyCode.Q) (function()
+			case (Enum.KeyCode.Q) (function() -- transmission++
 				ReplicatedStorage.events.transmissionChanged:FireServer(false);
 			end)
 		}
 	end);
 
-	handBrakeConnectorEnd = UserInputService.InputEnded:Connect(function(input)
+	handBrakeConnectorEnd = UserInputService.InputEnded:Connect(function(input) -- handbrake ended
 		if (input.KeyCode ~= Enum.KeyCode.Space) then
 			return;
 		end
 		ReplicatedStorage.events.handbreakEnd:FireServer();
 	end);
 
-	cameraConnector = game:GetService(`RunService`).Heartbeat:Connect(function()
+	cameraConnector = game:GetService(`RunService`).Heartbeat:Connect(function() -- update camera position
 		if (not speed) then
 			return;
 		end
 
-		if (speed <= 14 and seat.Throttle > 0) then
+		if (speed <= 14 and seat.Throttle > 0) then -- shake by bux
 			local CT = tick();
 			local x = math.cos(CT * 9) / 100 * maxSpeed * .25;
 			local y = math.abs(math.sin(CT * 12) / 100) * maxSpeed * .25;
 			humanoid.CameraOffset = humanoid.CameraOffset:Lerp(Vector3.new(x, y, 0), .25);
 		end
 
-		if (speed < maxSpeed - 20) then
+		if (speed < maxSpeed - 20) then -- zoom changer
 			Players.LocalPlayer.CameraMinZoomDistance = 20;
 			Players.LocalPlayer.CameraMaxZoomDistance = Players.LocalPlayer.CameraMinZoomDistance;					
 		elseif (Players.LocalPlayer.CameraMaxZoomDistance < 20 + (speed - maxSpeed + 20) / 2) then
@@ -155,7 +155,7 @@ ReplicatedStorage.events.newOccupant.OnClientEvent:Connect(function(seat, exitKe
 			Players.LocalPlayer.CameraMaxZoomDistance = Players.LocalPlayer.CameraMinZoomDistance;
 		end
 
-		if speed <= maxSpeed - 20 and speed > 14 then
+		if speed <= maxSpeed - 20 and speed > 14 then -- reset camera pos
 			TweenService:Create(humanoid, TweenInfo.new(.1), {CameraOffset = Vector3.new(0, 0, 0)}):Play();
 			return;
 		end
@@ -163,11 +163,11 @@ ReplicatedStorage.events.newOccupant.OnClientEvent:Connect(function(seat, exitKe
 		local CT = tick();
 		local x = math.cos(CT * 9) / 100 * speed * .5;
 		local y = math.abs(math.sin(CT * 12) / 100) + math.random(-100, 100) / 20000 * speed * .5;
-		humanoid.CameraOffset = humanoid.CameraOffset:Lerp(Vector3.new(x, y, 0), .25);
+		humanoid.CameraOffset = humanoid.CameraOffset:Lerp(Vector3.new(x, y, 0), .25); -- shake by high speed
 	end);
 end);
 
-ReplicatedStorage.events.leaveOccupant.OnClientEvent:Connect(function()
+ReplicatedStorage.events.leaveOccupant.OnClientEvent:Connect(function() -- leave disconnectors
 	inputBeganConnector:Disconnect();
 	handBrakeConnectorEnd:Disconnect();
 	cameraConnector:Disconnect();
@@ -176,7 +176,7 @@ ReplicatedStorage.events.leaveOccupant.OnClientEvent:Connect(function()
 	Players.LocalPlayer.CameraMinZoomDistance = .5;
 end);
 
-ReplicatedStorage.events.carSoundPlay.OnClientEvent:Connect(function(car, name : string)
+ReplicatedStorage.events.carSoundPlay.OnClientEvent:Connect(function(car, name : string) -- play sounds on client
 	coroutine.wrap(function()
 		while (speed < 10) do
 			task.wait(.1);
@@ -211,7 +211,7 @@ ReplicatedStorage.events.carSoundPlay.OnClientEvent:Connect(function(car, name :
 	}
 end);
 
-ReplicatedStorage.events.carSoundStop.OnClientEvent:Connect(function(car)
+ReplicatedStorage.events.carSoundStop.OnClientEvent:Connect(function(car) -- stop sounds on client
 	local sounds = Library:FindAllInTableBy(car.sounds:GetChildren(), `Playing`, true);
 	if (not sounds) then
 		return;
